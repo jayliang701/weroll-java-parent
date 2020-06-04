@@ -1,1 +1,1 @@
-# weroll-java-parent
+# weroll-starter-parent
