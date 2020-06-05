@@ -1,0 +1,86 @@
+#log
+logging:
+    level:
+        root: ${overrides.logging.level.root:INFO}
+#spring
+server:
+    port: ${app.port:8080}
+spring:
+    main:
+        lazy-initialization: false
+    application:
+        name: ${app.name:web}
+#排除自动配置
+    autoconfigure:
+        exclude: org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration,org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration, org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+    http:
+        converters:
+            preferred-json-mapper: fastjson
+        encoding:
+            force: true
+    servlet:
+        multipart:
+            max-file-size: ${overrides.spring.servlet.multipart.max-file-size:10MB}
+            max-request-size: ${overrides.spring.servlet.multipart.max-request-size:100MB}
+#springcloud config
+eureka:
+    client:
+        enabled: ${overrides.eureka.client.enabled:false}
+        fetch-registry: ${overrides.eureka.client.fetch-registry:false}
+        register-with-eureka: ${overrides.eureka.client.register-with-eureka:false}
+        serviceUrl:
+            defaultZone: ${overrides.eureka.client.serviceUrl:} #http://192.168.2.42:7000/eureka/,http://localhost:7000/eureka/
+    instance:
+        prefer-ip-address: ${overrides.eureka.instance.prefer-ip-address:true}
+##### weroll 配置 #####
+# api调用配置
+setting:
+    env: ${overrides.setting.env:localdev}
+    api:
+        connection-timeout: ${overrides.setting.api.connection-timeout:15000}
+# 是否开启跨越控制
+        cors-allow-originals: '*'
+        enable-cors: ${overrides.setting.api.enable-cors:true}
+        read-timeout: ${overrides.setting.api.read-timeout:15000}
+    router:
+        page-not-found: ${overrides.setting.router.page-not-found:/404}
+# 密码加密配置
+# 加密方式, 可选bcrypt或md5
+    auth:
+        denied-redirect: ${overrides.setting.auth.denied-redirect/403}
+        enabled: ${overrides.setting.auth.enabled:false}
+        entry-point: ${overrides.setting.auth.entry-point:/login}
+        password-encode-method: bcrypt
+        password-encode-strength: 10
+        password-encode-salt: ${overrides.setting.auth.password-encode-salt:SR367HN^&%mjbyc^*00913}
+        whitelist: /**
+# session
+# 存储Sess的方式, redis, 可选 redis, mongodb
+    sess:
+        mongodb:
+            auto-build-index: ${overrides.setting.sess.mongodb.auto-build-index:true}
+            uri: ${overrides.setting.sess.mongodb.uri:mongodb://localhost:27017/weroll_sess}
+        one-point-enter: false
+        redis:
+            host: ${overrides.setting.sess.redis.host:localhost}
+            port: ${overrides.setting.sess.redis.port:6379}
+            pass: ${overrides.setting.sess.redis.pass:}
+            pool:
+                max-active: ${overrides.setting.sess.redis.pool.max-active:20}
+                max-idle: ${overrides.setting.sess.redis.pool.max-idle:10}
+                max-wait: ${overrides.setting.sess.redis.pool.max-wait:-1}
+                min-idle: ${overrides.setting.sess.redis.pool.max-idle:0}
+            prefix: ${overrides.setting.sess.redis.prefix:weroll_java_sess_}
+        secret: ${overrides.setting.sess.secret:sdk.fjm4u343+)djn%}
+        storage-engine: ${overrides.setting.sess.storage-engine:redis}
+        token-expire-time: ${overrides.setting.sess.token-expire-time:2592000}
+# static and resources
+    res:
+        cdn: ${overrides.setting.res.cdn:/res}
+        handlers: ${overrides.setting.res.handlers:/webjars/**,/res/**}
+        locations: ${overrides.setting.res.locations:classpath:/META-INF/resources/webjars/,classpath:/res/}
+# site
+    site:
+        domain: ${overrides.setting.site.domain:http://localhost:8080}
+        title: ${overrides.setting.site.title:Weroll For Java}
+

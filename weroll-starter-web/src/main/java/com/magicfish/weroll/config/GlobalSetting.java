@@ -1,0 +1,26 @@
+package com.magicfish.weroll.config;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.annotation.PropertySources;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
+
+@Order(Ordered.HIGHEST_PRECEDENCE)
+@Configuration("globalSetting")
+@ConfigurationProperties(prefix="setting")
+@PropertySource("classpath:application-${spring.profiles.active}.yml")
+public class GlobalSetting extends BaseGlobalSetting {
+
+    private static GlobalSetting instance;
+
+    public static GlobalSetting getInstance() {
+        return instance;
+    }
+
+    public GlobalSetting() throws Exception {
+        instance = this;
+    }
+}
