@@ -5,6 +5,7 @@ import com.magicfish.weroll.utils.ClassUtil;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.CtMethod;
+import javassist.LoaderClassPath;
 import javassist.bytecode.*;
 import javassist.bytecode.annotation.*;
 
@@ -52,6 +53,7 @@ public final class AnnotationRegister {
 
     public static void initialize() throws Exception {
         ClassPool pool = ClassPool.getDefault();
+        pool.appendClassPath(new LoaderClassPath(Thread.currentThread().getContextClassLoader()));
         String[] apiPackages = retrievePackageScan(pool);
         for (int i = 0; i < apiPackages.length; i++) {
             String apiMapping = apiPackages[i];
