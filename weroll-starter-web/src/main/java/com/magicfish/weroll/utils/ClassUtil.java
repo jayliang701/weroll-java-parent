@@ -65,11 +65,14 @@ public class ClassUtil {
 
                     try {
                         String path = url.getFile().replace("!/" + packageDirName, "").replace("!/BOOT-INF/classes", "").replace("!/WEB-INF/classes", "");
-
-                        CodeSource codeSource = ClassUtil.class.getProtectionDomain().getCodeSource();
-                        File jarFile = new File(codeSource.getLocation().toURI().getPath());
-
-                        System.out.println("jar: " + jarFile.getAbsolutePath());
+                        if (path.startsWith("file:")) {
+                            path = path.replaceFirst("file:", "");
+                        }
+                        System.out.println("jar path: " + path);
+//                        CodeSource codeSource = ClassUtil.class.getProtectionDomain().getCodeSource();
+//                        File jarFile = new File(codeSource.getLocation().toURI().getPath());
+                        File jarFile = new File(path);
+//                        System.out.println("jar: " + jarFile.getAbsolutePath());
 //                        System.out.println("jar path: " + path);
 //                        System.out.println("jar exists: " + new File(path).exists());
 //                        InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(path);

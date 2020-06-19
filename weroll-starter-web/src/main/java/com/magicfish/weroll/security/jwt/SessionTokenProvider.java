@@ -37,6 +37,11 @@ public class SessionTokenProvider {
 
     @PostConstruct
     protected void init() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        if (!globalSetting.getAuth().isEnabled()) {
+            System.out.println("disable auth");
+            return;
+        }
+
         secretKey = Base64.getEncoder().encodeToString(globalSetting.getSess().getSecret().getBytes());
 
         SessProperties sessProperties = globalSetting.getSess();
