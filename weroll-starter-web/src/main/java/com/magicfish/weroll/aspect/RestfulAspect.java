@@ -133,6 +133,13 @@ public class RestfulAspect {
     private static Object buildResponse(Object body) {
         JSONObject result = new JSONObject();
         result.put("code", ErrorCodes.OK);
+        if (body != null) {
+            try {
+                body = JSON.toJSON(body);
+            } catch (Exception e) {
+
+            }
+        }
         result.put("data", body);
         return result;
     }

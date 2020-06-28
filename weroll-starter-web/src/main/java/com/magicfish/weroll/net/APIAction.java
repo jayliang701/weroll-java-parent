@@ -1,6 +1,7 @@
 package com.magicfish.weroll.net;
 
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.magicfish.weroll.consts.ErrorCodes;
 import com.magicfish.weroll.exception.ServiceException;
@@ -40,6 +41,13 @@ public class APIAction extends HttpAction {
     public Object sayOK(Object data) {
         JSONObject result = new JSONObject();
         result.put("code", ErrorCodes.OK);
+        if (data != null) {
+            try {
+                data = JSON.toJSON(data);
+            } catch (Exception e) {
+
+            }
+        }
         result.put("data", data);
         return result;
     }

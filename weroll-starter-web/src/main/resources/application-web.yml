@@ -42,6 +42,7 @@ setting:
         cors-allow-originals: '*'
         enable-cors: ${overrides.setting.api.enable-cors:true}
         read-timeout: ${overrides.setting.api.read-timeout:15000}
+        custom-message-converters: ${overrides.setting.api.custom-message-converters:false}
     router:
         page-not-found: ${overrides.setting.router.page-not-found:/404}
 # 密码加密配置
