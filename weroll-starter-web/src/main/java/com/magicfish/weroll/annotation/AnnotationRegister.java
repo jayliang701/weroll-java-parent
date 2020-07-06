@@ -8,6 +8,7 @@ import javassist.CtMethod;
 import javassist.LoaderClassPath;
 import javassist.bytecode.*;
 import javassist.bytecode.annotation.*;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,6 +16,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@Slf4j
 public final class AnnotationRegister {
 
     private static final String NS = "com.magicfish.weroll.annotation.";
@@ -59,7 +61,7 @@ public final class AnnotationRegister {
             String apiMapping = apiPackages[i];
             if (apiMapping != null && !apiMapping.isEmpty()) {
                 if (apiMapping.contains("file:") || apiMapping.contains("/")) {
-                    System.out.println("found invalid mapping package: " + apiMapping);
+                    log.warn("found invalid mapping package: {}", apiMapping);
                     continue;
                 }
                 injectRest(pool, apiMapping);
@@ -175,7 +177,7 @@ public final class AnnotationRegister {
                     addMethodAnnotation(targetMethod, annotationSpring);
                 }
 
-                System.out.println("register rest api: " + annotation.getMemberValue("value"));
+                log.info("register rest api: {}", annotation.getMemberValue("value"));
                 CtClass[] paramTypes = targetMethod.getParameterTypes();
 
                 ParameterAnnotationsAttribute parameterAttribute = getMethodParameterAttribute(targetMethod, paramTypes.length);

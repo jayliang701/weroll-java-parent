@@ -166,29 +166,30 @@
 
     </build>
 
-<!--    <distributionManagement>-->
-<!--        <snapshotRepository>-->
-<!--            <id>snapshots</id>-->
-<!--            <url>https://devrepo.devcloud.cn-east-3.huaweicloud.com/04/nexus/content/repositories/005f168280cf4937a6cf3cb35b78e12e_2_0/</url>-->
-<!--        </snapshotRepository>-->
-<!--        <repository>-->
-<!--            <id>releases</id>-->
-<!--            <url>https://devrepo.devcloud.cn-east-3.huaweicloud.com/04/nexus/content/repositories/005f168280cf4937a6cf3cb35b78e12e_1_0/</url>-->
-<!--        </repository>-->
-<!--    </distributionManagement>-->
-
     <distributionManagement>
         <snapshotRepository>
-            <id>rdc-snapshots</id>
-            <url>https://repo.rdc.aliyun.com/repository/125431-snapshot-FxNeAJ/</url>
+            <id>snapshots</id>
+            <url>https://devrepo.devcloud.cn-east-3.huaweicloud.com/04/nexus/content/repositories/005f168280cf4937a6cf3cb35b78e12e_2_0/</url>
         </snapshotRepository>
         <repository>
-            <id>rdc-releases</id>
-            <url>https://repo.rdc.aliyun.com/repository/125431-release-i7NLQv/</url>
+            <id>releases</id>
+            <url>https://devrepo.devcloud.cn-east-3.huaweicloud.com/04/nexus/content/repositories/005f168280cf4937a6cf3cb35b78e12e_1_0/</url>
         </repository>
     </distributionManagement>
 
+<!--    <distributionManagement>-->
+<!--        <snapshotRepository>-->
+<!--            <id>rdc-snapshots</id>-->
+<!--            <url>https://repo.rdc.aliyun.com/repository/125431-snapshot-FxNeAJ/</url>-->
+<!--        </snapshotRepository>-->
+<!--        <repository>-->
+<!--            <id>rdc-releases</id>-->
+<!--            <url>https://repo.rdc.aliyun.com/repository/125431-release-i7NLQv/</url>-->
+<!--        </repository>-->
+<!--    </distributionManagement>-->
+
     <modules>
+        <module>weroll-starter-html</module>
         <module>weroll-starter-web</module>
     </modules>
 

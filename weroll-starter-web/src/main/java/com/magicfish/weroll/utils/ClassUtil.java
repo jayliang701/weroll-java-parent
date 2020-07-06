@@ -1,11 +1,12 @@
 package com.magicfish.weroll.utils;
 
 import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.security.CodeSource;
 import java.util.Enumeration;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -13,6 +14,8 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 public class ClassUtil {
+
+    private final static Logger log = LoggerFactory.getLogger(ClassUtil.class);
 
     public static Set<Class<?>> getClasses(String pack) {
         return getClasses(pack, Thread.currentThread().getContextClassLoader());
@@ -68,14 +71,8 @@ public class ClassUtil {
                         if (path.startsWith("file:")) {
                             path = path.replaceFirst("file:", "");
                         }
-                        System.out.println("jar path: " + path);
-//                        CodeSource codeSource = ClassUtil.class.getProtectionDomain().getCodeSource();
-//                        File jarFile = new File(codeSource.getLocation().toURI().getPath());
+                        log.info("jar path: {}", path);
                         File jarFile = new File(path);
-//                        System.out.println("jar: " + jarFile.getAbsolutePath());
-//                        System.out.println("jar path: " + path);
-//                        System.out.println("jar exists: " + new File(path).exists());
-//                        InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(path);
 
                         InputStream inputStream = new FileInputStream(jarFile);
 

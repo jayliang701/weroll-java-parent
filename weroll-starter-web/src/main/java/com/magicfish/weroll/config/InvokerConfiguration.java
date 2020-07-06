@@ -6,7 +6,6 @@ import com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter;
 import com.magicfish.weroll.annotation.API;
 import com.magicfish.weroll.annotation.Invoker;
 import com.magicfish.weroll.annotation.InvokerProvider;
-import com.magicfish.weroll.annotation.RouterGroup;
 import com.magicfish.weroll.net.ServiceInvoker;
 import com.netflix.discovery.EurekaClient;
 import org.apache.commons.lang.IllegalClassException;
@@ -97,7 +96,7 @@ public class InvokerConfiguration {
         restTemplate.setMessageConverters(Arrays.asList(stringHttpMessageConverter, fastConverter));
 
         Class[] scanMap = {
-                API.class, RouterGroup.class, InvokerProvider.class,
+                API.class, InvokerProvider.class,
         };
         for (Class cls : scanMap) {
             this.register(applicationContext.getBeansWithAnnotation(cls));

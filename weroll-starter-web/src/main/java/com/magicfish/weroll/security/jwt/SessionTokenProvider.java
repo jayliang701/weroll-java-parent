@@ -9,6 +9,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -25,6 +26,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @Component
 public class SessionTokenProvider {
 
@@ -37,8 +39,11 @@ public class SessionTokenProvider {
 
     @PostConstruct
     protected void init() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
-        if (!globalSetting.getAuth().isEnabled()) {
-            System.out.println("disable auth");
+
+        boolean enableAuth = globalSetting.getAuth().isEnabled();
+        log.info("auth: {}", enableAuth ? "enabled" : "disabled");
+
+        if (!enableAuth) {
             return;
         }
 

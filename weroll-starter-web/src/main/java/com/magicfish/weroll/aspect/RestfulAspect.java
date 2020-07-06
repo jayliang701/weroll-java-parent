@@ -13,8 +13,9 @@ import com.magicfish.weroll.net.HttpAction;
 import com.magicfish.weroll.net.IRequestBodyFilter;
 import com.magicfish.weroll.net.IResponseBodyProcessor;
 import com.magicfish.weroll.utils.TypeConverter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.Charsets;
-import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpStatus;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -45,6 +46,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Aspect
 public class RestfulAspect {
 
@@ -144,30 +146,30 @@ public class RestfulAspect {
         return result;
     }
 
-    private static Object buildError(String msg, int code) {
+    private static Object buildError(String msg, int code, int status) {
         JSONObject result = new JSONObject();
         result.put("code", code);
         result.put("msg", msg);
         return result;
     }
 
-    private static Object buildError(Exception e, int code) {
+    private static Object buildError(Exception e, int code, int status) {
         StringWriter stringWriter = new StringWriter();
         e.printStackTrace(new PrintWriter(stringWriter));
         String msg = stringWriter.toString();
 
-        return buildError(msg, code);
+        return buildError(msg, code, status);
     }
 
     private static Object buildError(Exception e) {
         if (e instanceof ServiceException) {
-            return buildError(e, ((ServiceException) e).getCode());
+            return buildError(e, ((ServiceException) e).getCode(), ((ServiceException) e).getStatus());
         }
-        return buildError(e, ErrorCodes.SERVER_ERROR);
+        return buildError(e, ErrorCodes.SERVER_ERROR, HttpStatus.SC_INTERNAL_SERVER_ERROR);
     }
 
     private static Object buildError(ServiceException e) {
-        return buildError(e.getMessage(), e.getCode());
+        return buildError(e.getMessage(), e.getCode(), e.getStatus());
     }
 
     @Pointcut("@within(com.magicfish.weroll.annotation.Rest) && (@annotation(com.magicfish.weroll.annotation.RestPost) || @annotation(com.magicfish.weroll.annotation.RestGet)))")
@@ -177,144 +179,146 @@ public class RestfulAspect {
 
     @Before("exec() && args(params)")
     public void beforeExec(JoinPoint joinPoint, Map<String,String> params) throws Throwable {
-        System.out.println(joinPoint.getTarget());
+
     }
 
     @Around("exec()")
     public Object aroundExecWithServletObject(ProceedingJoinPoint joinPoint) throws Throwable {
-        try {
-            Object[] args = joinPoint.getArgs();
+        Object[] args = joinPoint.getArgs();
 
-            ServletRequestAttributes servletRequestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-            HttpServletRequest request = servletRequestAttributes.getRequest();
-            HttpServletResponse response = servletRequestAttributes.getResponse();
+        ServletRequestAttributes servletRequestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        HttpServletRequest request = servletRequestAttributes.getRequest();
+        HttpServletResponse response = servletRequestAttributes.getResponse();
 
-            JSONObject json = null;
+        JSONObject json = null;
 
-            MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-            Method method = signature.getMethod();
-            String methodName = method.toGenericString();
+        MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+        Method method = signature.getMethod();
+        String methodName = method.toGenericString();
 
-            HttpAction httpAction = HttpAction.create(request, response);
+        HttpAction httpAction = HttpAction.create(request, response);
 
-            boolean needLogin = methodNeedLoginMap.get(methodName);
-            if (needLogin && !httpAction.isLogined()) {
-                return buildError("No Permission", ErrorCodes.NO_PERMISSION);
-            }
-
-            DefaultParameterNameDiscoverer discoverer = new DefaultParameterNameDiscoverer();
-            String[] paramNames = discoverer.getParameterNames(method);
-            Class[] paramTypes = method.getParameterTypes();
-
-            if (request.getMethod() == RequestMethod.POST.name()) {
-                IRequestBodyFilter requestBodyFilter = requestBodyFilterMap.get(methodName);
-                if (requestBodyFilter != null) {
-                    json = requestBodyFilter.doFilter(request);
-                }
-            }
-
-            Annotation[][] paramsAnnotations = method.getParameterAnnotations();
-
-            Type[] types = method.getGenericParameterTypes();
-
-            int size = paramNames.length;
-            Object[] newArgs = new Object[size];
-
-            for (int i = 0; i < size; i++) {
-                String paramName = paramNames[i];
-                Class<?> paramType = paramTypes[i];
-                Object paramValue = args[i];
-
-                if (paramValue != null && paramType == String.class) {
-                    if (((String) paramValue).isEmpty()) {
-                        paramValue = null;
-                    }
-                } else if (paramType == HttpAction.class) {
-                    paramValue = httpAction;
-                } else if (paramValue == null || paramValue instanceof Serializable) {
-                    if (json != null) {
-                        paramValue = json.get(paramName);
-                    }
-                    try {
-                        if (!BeanUtils.isSimpleValueType(paramType)) {
-                            if (paramValue instanceof JSONArray) {
-                                JSONArray arr = (JSONArray) paramValue;
-                                ArrayParam arrayParam = isArrayParam(method, i);
-                                if (arrayParam == null) {
-                                    return buildError("param [" + paramName + "] should not be a array.", ErrorCodes.REQUEST_PARAMS_INVALID);
-                                }
-                                Class<?> elementType = arrayParam.getElementType();
-                                int len = arr.size();
-                                if (arrayParam.isTypeArray()) {
-                                    Object[] list = (Object[]) Array.newInstance(elementType, len);
-                                    for (int j = 0; j < len; j++) {
-                                        if (arrayParam.isSimpleValueType()) {
-                                            list[j] = arr.get(j);
-                                        } else {
-                                            list[j] = JSON.toJavaObject((JSONObject) arr.get(j), elementType);
-                                        }
-                                    }
-                                    paramValue = list;
-                                } else {
-                                    List<Object> list = new ArrayList<>();
-                                    for (int j = 0; j < len; j++) {
-                                        if (arrayParam.isSimpleValueType()) {
-                                            list.add(arr.get(j));
-                                        } else {
-                                            list.add(JSON.toJavaObject((JSONObject) arr.get(j), elementType));
-                                        }
-                                    }
-                                    paramValue = list;
-                                }
-
-                            } else {
-                                paramValue = JSON.toJavaObject((JSONObject) paramValue, paramType);
-                            }
-                        }
-                    } catch (Exception e) {
-                        return buildError("failed to parse param [" + paramName + "]. " + e.getMessage(), ErrorCodes.REQUEST_PARAMS_INVALID);
-                    }
-                }
-
-                if (paramValue == null) {
-                    boolean allowEmpty = false;
-                    Annotation[] annotations = paramsAnnotations[i];
-                    if (annotations != null && annotations.length > 0) {
-                        for (int j = 0; j < annotations.length; j++) {
-                            Annotation annotation = annotations[j];
-                            if (annotation instanceof Param) {
-                                Param param = (Param) annotation;
-                                if (!param.required()) {
-                                    //check default value
-                                    String defaultValue = param.defaultValue();
-                                    if (!defaultValue.isEmpty()) {
-                                        paramValue = TypeConverter.castValueAs(defaultValue, ((Class) types[i]));
-                                    }
-                                    allowEmpty = true;
-                                }
-                                break;
-                            }
-                        }
-                    }
-                    if (!allowEmpty) {
-                        return buildError("param [" + paramName + "] is required", ErrorCodes.REQUEST_PARAMS_INVALID);
-                    }
-                }
-
-                newArgs[i] = paramValue;
-            }
-
-            Object responseBody = buildResponse(joinPoint.proceed(newArgs));
-
-            IResponseBodyProcessor responseBodyProcessor = responseBodyProcessorMap.get(methodName);
-            if (responseBodyProcessor != null) {
-                return responseBodyProcessor.doProcess(responseBody, request, response);
-            }
-
-            return responseBody;
-        } catch (Exception e) {
-            return buildError(e);
+        boolean needLogin = methodNeedLoginMap.get(methodName);
+        if (needLogin && !httpAction.isLogined()) {
+//                return buildError("No Permission", ErrorCodes.NO_PERMISSION);
+            throw new ServiceException("No Permission", ErrorCodes.NO_PERMISSION, HttpStatus.SC_FORBIDDEN);
         }
+
+        DefaultParameterNameDiscoverer discoverer = new DefaultParameterNameDiscoverer();
+        String[] paramNames = discoverer.getParameterNames(method);
+        Class[] paramTypes = method.getParameterTypes();
+
+        if (request.getMethod() == RequestMethod.POST.name()) {
+            IRequestBodyFilter requestBodyFilter = requestBodyFilterMap.get(methodName);
+            if (requestBodyFilter != null) {
+                json = requestBodyFilter.doFilter(request);
+            }
+        }
+
+        Annotation[][] paramsAnnotations = method.getParameterAnnotations();
+
+        Type[] types = method.getGenericParameterTypes();
+
+        int size = paramNames.length;
+        Object[] newArgs = new Object[size];
+
+        for (int i = 0; i < size; i++) {
+            String paramName = paramNames[i];
+            Class<?> paramType = paramTypes[i];
+            Object paramValue = args[i];
+
+            if (paramValue != null && paramType == String.class) {
+                if (((String) paramValue).isEmpty()) {
+                    paramValue = null;
+                }
+            } else if (paramType == HttpAction.class) {
+                paramValue = httpAction;
+            } else if (paramValue == null || paramValue instanceof Serializable) {
+                if (json != null) {
+                    paramValue = json.get(paramName);
+                }
+                try {
+                    if (!BeanUtils.isSimpleValueType(paramType)) {
+                        if (paramValue instanceof JSONArray) {
+                            JSONArray arr = (JSONArray) paramValue;
+                            ArrayParam arrayParam = isArrayParam(method, i);
+                            if (arrayParam == null) {
+//                                    return buildError("param [" + paramName + "] should not be a array.", ErrorCodes.REQUEST_PARAMS_INVALID);
+                                throw new ServiceException("param [" + paramName + "] should not be a array.", ErrorCodes.REQUEST_PARAMS_INVALID, HttpStatus.SC_BAD_REQUEST);
+                            }
+                            Class<?> elementType = arrayParam.getElementType();
+                            int len = arr.size();
+                            if (arrayParam.isTypeArray()) {
+                                Object[] list = (Object[]) Array.newInstance(elementType, len);
+                                for (int j = 0; j < len; j++) {
+                                    if (arrayParam.isSimpleValueType()) {
+                                        list[j] = arr.get(j);
+                                    } else {
+                                        list[j] = JSON.toJavaObject((JSONObject) arr.get(j), elementType);
+                                    }
+                                }
+                                paramValue = list;
+                            } else {
+                                List<Object> list = new ArrayList<>();
+                                for (int j = 0; j < len; j++) {
+                                    if (arrayParam.isSimpleValueType()) {
+                                        list.add(arr.get(j));
+                                    } else {
+                                        list.add(JSON.toJavaObject((JSONObject) arr.get(j), elementType));
+                                    }
+                                }
+                                paramValue = list;
+                            }
+
+                        } else {
+                            paramValue = JSON.toJavaObject((JSONObject) paramValue, paramType);
+                        }
+                    }
+                } catch (ServiceException e) {
+                    throw e;
+                } catch (Exception e) {
+//                        return buildError("failed to parse param [" + paramName + "]. " + e.getMessage(), ErrorCodes.REQUEST_PARAMS_INVALID);
+                    throw new ServiceException("failed to parse param [" + paramName + "]. " + e.getMessage(), ErrorCodes.REQUEST_PARAMS_INVALID, HttpStatus.SC_BAD_REQUEST);
+                }
+            }
+
+            if (paramValue == null) {
+                boolean allowEmpty = false;
+                Annotation[] annotations = paramsAnnotations[i];
+                if (annotations != null && annotations.length > 0) {
+                    for (int j = 0; j < annotations.length; j++) {
+                        Annotation annotation = annotations[j];
+                        if (annotation instanceof Param) {
+                            Param param = (Param) annotation;
+                            if (!param.required()) {
+                                //check default value
+                                String defaultValue = param.defaultValue();
+                                if (!defaultValue.isEmpty()) {
+                                    paramValue = TypeConverter.castValueAs(defaultValue, ((Class) types[i]));
+                                }
+                                allowEmpty = true;
+                            }
+                            break;
+                        }
+                    }
+                }
+                if (!allowEmpty) {
+//                        return buildError("param [" + paramName + "] is required", ErrorCodes.REQUEST_PARAMS_INVALID);
+                    throw new ServiceException("param [" + paramName + "] is required", ErrorCodes.REQUEST_PARAMS_INVALID, HttpStatus.SC_BAD_REQUEST);
+                }
+            }
+
+            newArgs[i] = paramValue;
+        }
+
+        Object responseBody = buildResponse(joinPoint.proceed(newArgs));
+
+        IResponseBodyProcessor responseBodyProcessor = responseBodyProcessorMap.get(methodName);
+        if (responseBodyProcessor != null) {
+            return responseBodyProcessor.doProcess(responseBody, request, response);
+        }
+
+        return responseBody;
     }
 
 }
